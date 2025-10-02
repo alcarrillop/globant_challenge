@@ -15,7 +15,14 @@ def parse_csv_content(csv_content: bytes) -> pd.DataFrame:
         df = pd.read_csv(io.StringIO(csv_string), header=None, sep=',')
         # Auto-detect format based on number of columns
         if len(df.columns) == 2:
-            df.columns = ['id', 'name']
+            # Check if it's departments or jobs by looking at first row
+            first_row = df.iloc[0, 1] if len(df) > 0 else ""
+            if "Supply Chain" in str(first_row) or "Maintenance" in str(first_row):
+                df.columns = ['id', 'department']
+            elif "Recruiter" in str(first_row) or "Manager" in str(first_row):
+                df.columns = ['id', 'job']
+            else:
+                df.columns = ['id', 'name']  # fallback
         elif len(df.columns) == 4:
             df.columns = ['id', 'name', 'datetime', 'department_id']
         elif len(df.columns) == 5:
@@ -29,12 +36,12 @@ def parse_csv_content(csv_content: bytes) -> pd.DataFrame:
 def validate_departments_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     """Validate and prepare departments data from DataFrame"""
     # Handle both formats: with/without id column
-    if 'id' in df.columns and 'name' in df.columns:
-        # Format: id,name
-        required_columns = ['id', 'name']
+    if 'id' in df.columns and 'department' in df.columns:
+        # Format: id,department
+        required_columns = ['id', 'department']
     else:
-        # Format: name only
-        required_columns = ['name']
+        # Format: department only
+        required_columns = ['department']
     
     # Check required columns
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -44,11 +51,11 @@ def validate_departments_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     # Prepare data
     departments = []
     for _, row in df.iterrows():
-        if pd.isna(row['name']) or str(row['name']).strip() == '':
+        if pd.isna(row['department']) or str(row['department']).strip() == '':
             continue
             
         departments.append({
-            'name': str(row['name']).strip()
+            'department': str(row['department']).strip()
         })
     
     return departments
@@ -57,12 +64,12 @@ def validate_departments_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
 def validate_jobs_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     """Validate and prepare jobs data from DataFrame"""
     # Handle both formats: with/without id column
-    if 'id' in df.columns and 'name' in df.columns:
-        # Format: id,name (no department_id in CSV)
-        required_columns = ['id', 'name']
+    if 'id' in df.columns and 'job' in df.columns:
+        # Format: id,job (no department_id in CSV)
+        required_columns = ['id', 'job']
     else:
-        # Format: name,department_id
-        required_columns = ['name', 'department_id']
+        # Format: job,department_id
+        required_columns = ['job', 'department_id']
     
     # Check required columns
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -72,7 +79,7 @@ def validate_jobs_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     # Prepare data
     jobs = []
     for _, row in df.iterrows():
-        if pd.isna(row['name']) or str(row['name']).strip() == '':
+        if pd.isna(row['job']) or str(row['job']).strip() == '':
             continue
         
         # Handle different formats
@@ -80,14 +87,14 @@ def validate_jobs_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
             if pd.isna(row['department_id']):
                 continue
             jobs.append({
-                'name': str(row['name']).strip(),
+                'job': str(row['job']).strip(),
                 'department_id': int(row['department_id'])
             })
         else:
             # For format without department_id, we'll need to handle this differently
             # This might require additional logic or a default department
             jobs.append({
-                'name': str(row['name']).strip(),
+                'job': str(row['job']).strip(),
                 'department_id': 1  # Default department - this might need adjustment
             })
     

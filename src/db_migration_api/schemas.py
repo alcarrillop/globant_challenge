@@ -5,7 +5,7 @@ from typing import List, Optional
 
 # Department schemas
 class DepartmentBase(BaseModel):
-    name: str = Field(..., max_length=100)
+    department: str = Field(..., max_length=100)
 
 
 class DepartmentCreate(DepartmentBase):
@@ -23,7 +23,7 @@ class Department(DepartmentBase):
 
 # Job schemas
 class JobBase(BaseModel):
-    name: str = Field(..., max_length=100)
+    job: str = Field(..., max_length=100)
     department_id: int
 
 
