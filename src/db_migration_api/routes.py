@@ -31,7 +31,7 @@ async def upload_csv(
     """Upload and process CSV file"""
     
     # Validate table name
-    valid_tables = ['departments', 'jobs', 'employees']
+    valid_tables = ['departments', 'jobs', 'employees', 'hired_employees']
     if table not in valid_tables:
         raise HTTPException(
             status_code=400, 
@@ -62,7 +62,7 @@ async def upload_csv(
             records_inserted = batch_create_departments(db, validated_data)
         elif table == 'jobs':
             records_inserted = batch_create_jobs(db, validated_data)
-        elif table == 'employees':
+        elif table in ['employees', 'hired_employees']:
             records_inserted = batch_create_employees(db, validated_data)
         
         return UploadResponse(
@@ -86,7 +86,7 @@ async def batch_insert(
     """Batch insert records (1-1000 records)"""
     
     # Validate table name
-    valid_tables = ['departments', 'jobs', 'employees']
+    valid_tables = ['departments', 'jobs', 'employees', 'hired_employees']
     if table not in valid_tables:
         raise HTTPException(
             status_code=400, 
@@ -106,7 +106,7 @@ async def batch_insert(
             records_inserted = batch_create_departments(db, validated_data)
         elif table == 'jobs':
             records_inserted = batch_create_jobs(db, validated_data)
-        elif table == 'employees':
+        elif table in ['employees', 'hired_employees']:
             records_inserted = batch_create_employees(db, validated_data)
         
         return BatchInsertResponse(

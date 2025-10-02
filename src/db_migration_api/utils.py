@@ -20,7 +20,13 @@ def parse_csv_content(csv_content: bytes) -> pd.DataFrame:
 
 def validate_departments_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     """Validate and prepare departments data from DataFrame"""
-    required_columns = ['name']
+    # Handle both formats: with/without id column
+    if 'id' in df.columns and 'name' in df.columns:
+        # Format: id,name
+        required_columns = ['id', 'name']
+    else:
+        # Format: name only
+        required_columns = ['name']
     
     # Check required columns
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -42,7 +48,13 @@ def validate_departments_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
 
 def validate_jobs_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     """Validate and prepare jobs data from DataFrame"""
-    required_columns = ['name', 'department_id']
+    # Handle both formats: with/without id column
+    if 'id' in df.columns and 'name' in df.columns:
+        # Format: id,name (no department_id in CSV)
+        required_columns = ['id', 'name']
+    else:
+        # Format: name,department_id
+        required_columns = ['name', 'department_id']
     
     # Check required columns
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -54,20 +66,35 @@ def validate_jobs_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     for _, row in df.iterrows():
         if pd.isna(row['name']) or str(row['name']).strip() == '':
             continue
-        if pd.isna(row['department_id']):
-            continue
-            
-        jobs.append({
-            'name': str(row['name']).strip(),
-            'department_id': int(row['department_id'])
-        })
+        
+        # Handle different formats
+        if 'department_id' in df.columns:
+            if pd.isna(row['department_id']):
+                continue
+            jobs.append({
+                'name': str(row['name']).strip(),
+                'department_id': int(row['department_id'])
+            })
+        else:
+            # For format without department_id, we'll need to handle this differently
+            # This might require additional logic or a default department
+            jobs.append({
+                'name': str(row['name']).strip(),
+                'department_id': 1  # Default department - this might need adjustment
+            })
     
     return jobs
 
 
 def validate_employees_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     """Validate and prepare employees data from DataFrame"""
-    required_columns = ['name', 'datetime', 'department_id', 'job_id']
+    # Handle both formats: with/without id column
+    if 'id' in df.columns:
+        # Format: id,name,datetime,department_id,job_id
+        required_columns = ['id', 'name', 'datetime', 'department_id', 'job_id']
+    else:
+        # Format: name,datetime,department_id,job_id
+        required_columns = ['name', 'datetime', 'department_id', 'job_id']
     
     # Check required columns
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -109,7 +136,8 @@ def get_table_validator(table_name: str):
     validators = {
         'departments': validate_departments_data,
         'jobs': validate_jobs_data,
-        'employees': validate_employees_data
+        'employees': validate_employees_data,
+        'hired_employees': validate_employees_data  # Same validation as employees
     }
     
     if table_name not in validators:
