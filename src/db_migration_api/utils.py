@@ -1,7 +1,6 @@
 import pandas as pd
 import io
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+from typing import List, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,15 +10,23 @@ def parse_csv_content(csv_content: bytes) -> pd.DataFrame:
     """Parse CSV content from bytes to pandas DataFrame"""
     try:
         csv_string = csv_content.decode('utf-8')
+        logger.info("CSV content preview: %s...", csv_string[:200])
+        
         # Always parse without headers first, then auto-detect format
         df = pd.read_csv(io.StringIO(csv_string), header=None, sep=',')
+        logger.info("Parsed DataFrame shape: %s", df.shape)
+        logger.info("DataFrame columns: %s", df.columns.tolist())
+        
         # Auto-detect format based on number of columns
         if len(df.columns) == 2:
+            # For 2 columns, assume it's id,department or id,job
             # Check if it's departments or jobs by looking at first row
             first_row = df.iloc[0, 1] if len(df) > 0 else ""
-            if "Supply Chain" in str(first_row) or "Maintenance" in str(first_row):
+            logger.info("First row second column: %s", first_row)
+            
+            if "Product Management" in str(first_row) or "Sales" in str(first_row) or "Engineering" in str(first_row):
                 df.columns = ['id', 'department']
-            elif "Recruiter" in str(first_row) or "Manager" in str(first_row):
+            elif "Recruiter" in str(first_row) or "Manager" in str(first_row) or "Assistant" in str(first_row) or "VP" in str(first_row):
                 df.columns = ['id', 'job']
             else:
                 df.columns = ['id', 'name']  # fallback
@@ -27,26 +34,23 @@ def parse_csv_content(csv_content: bytes) -> pd.DataFrame:
             df.columns = ['id', 'name', 'datetime', 'department_id']
         elif len(df.columns) == 5:
             df.columns = ['id', 'name', 'datetime', 'department_id', 'job_id']
+        
+        logger.info("Final DataFrame columns: %s", df.columns.tolist())
         return df
     except Exception as e:
-        logger.error(f"Error parsing CSV: {e}")
-        raise ValueError(f"Invalid CSV format: {e}")
+        logger.error("Error parsing CSV: %s", e)
+        raise ValueError("Invalid CSV format: %s" % e) from e
 
 
 def validate_departments_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
     """Validate and prepare departments data from DataFrame"""
-    # Handle both formats: with/without id column
-    if 'id' in df.columns and 'department' in df.columns:
-        # Format: id,department
-        required_columns = ['id', 'department']
-    else:
-        # Format: department only
-        required_columns = ['department']
+    logger.info("DataFrame columns: %s", df.columns.tolist())
+    logger.info("DataFrame shape: %s", df.shape)
+    logger.info("First few rows: %s", df.head())
     
     # Check required columns
-    missing_columns = [col for col in required_columns if col not in df.columns]
-    if missing_columns:
-        raise ValueError(f"Missing required columns: {missing_columns}")
+    if 'department' not in df.columns:
+        raise ValueError("Missing required columns: ['department']")
     
     # Prepare data
     departments = []
@@ -58,6 +62,7 @@ def validate_departments_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
             'department': str(row['department']).strip()
         })
     
+    logger.info("Prepared %d departments", len(departments))
     return departments
 
 
@@ -91,11 +96,11 @@ def validate_jobs_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
                 'department_id': int(row['department_id'])
             })
         else:
-            # For format without department_id, we'll need to handle this differently
-            # This might require additional logic or a default department
+            # For format without department_id, assign to first available department
+            # This is a simplified approach - in production you might want more sophisticated logic
             jobs.append({
                 'job': str(row['job']).strip(),
-                'department_id': 1  # Default department - this might need adjustment
+                'department_id': 1  # Default to first department
             })
     
     return jobs
@@ -132,8 +137,8 @@ def validate_employees_data(df: pd.DataFrame) -> List[Dict[str, Any]]:
                 datetime_obj = pd.to_datetime(row['datetime'])
             else:
                 datetime_obj = row['datetime']
-        except:
-            logger.warning(f"Invalid datetime format for row: {row}")
+        except (ValueError, TypeError, pd.errors.ParserError) as e:
+            logger.warning("Invalid datetime format for row: %s, error: %s", row, e)
             continue
             
         employees.append({

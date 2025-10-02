@@ -67,15 +67,15 @@ def batch_create_employees(db: Session, employees: List[Dict[str, Any]]) -> int:
         raise
 
 
-def get_department_by_name(db: Session, name: str) -> models.Department:
+def get_department_by_name(db: Session, department: str) -> models.Department:
     """Get department by name"""
-    return db.query(models.Department).filter(models.Department.name == name).first()
+    return db.query(models.Department).filter(models.Department.department == department).first()
 
 
-def get_job_by_name_and_department(db: Session, name: str, department_id: int) -> models.Job:
+def get_job_by_name_and_department(db: Session, job: str, department_id: int) -> models.Job:
     """Get job by name and department"""
     return db.query(models.Job).filter(
-        models.Job.name == name,
+        models.Job.job == job,
         models.Job.department_id == department_id
     ).first()
 

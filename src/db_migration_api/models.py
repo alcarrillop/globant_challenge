@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, func
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -11,8 +11,8 @@ class Department(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     department = Column(String(100), nullable=False, unique=True)
-    created_at = Column(DateTime, default=func.now)
-    updated_at = Column(DateTime, default=func.now, onupdate=func.now)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    updated_at = Column(DateTime, default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow())
     
     # Relationships
     jobs = relationship("Job", back_populates="department")
@@ -24,8 +24,8 @@ class Job(Base):
     id = Column(Integer, primary_key=True, index=True)
     job = Column(String(100), nullable=False)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
-    created_at = Column(DateTime, default=func.now)
-    updated_at = Column(DateTime, default=func.now, onupdate=func.now)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    updated_at = Column(DateTime, default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow())
     
     # Relationships
     department = relationship("Department", back_populates="jobs")
@@ -40,8 +40,8 @@ class Employee(Base):
     datetime = Column(DateTime, nullable=False)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
-    created_at = Column(DateTime, default=func.now)
-    updated_at = Column(DateTime, default=func.now, onupdate=func.now)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    updated_at = Column(DateTime, default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow())
     
     # Relationships
     department = relationship("Department")

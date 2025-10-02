@@ -45,13 +45,16 @@ async def upload_csv(
     try:
         # Read file content
         content = await file.read()
+        logger.info(f"File content length: {len(content)}")
         
         # Parse CSV
         df = parse_csv_content(content)
+        logger.info(f"Parsed DataFrame: {df.shape}")
         
         # Get validator for the table
         validator = get_table_validator(table)
         validated_data = validator(df)
+        logger.info(f"Validated data count: {len(validated_data)}")
         
         if not validated_data:
             raise HTTPException(status_code=400, detail="No valid data found in CSV")
@@ -71,9 +74,10 @@ async def upload_csv(
         )
         
     except ValueError as e:
+        logger.error(f"ValueError: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error processing CSV: {e}")
+        logger.error(f"Error processing CSV: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
