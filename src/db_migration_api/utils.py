@@ -11,7 +11,15 @@ def parse_csv_content(csv_content: bytes) -> pd.DataFrame:
     """Parse CSV content from bytes to pandas DataFrame"""
     try:
         csv_string = csv_content.decode('utf-8')
-        df = pd.read_csv(io.StringIO(csv_string))
+        # Always parse without headers first, then auto-detect format
+        df = pd.read_csv(io.StringIO(csv_string), header=None, sep=',')
+        # Auto-detect format based on number of columns
+        if len(df.columns) == 2:
+            df.columns = ['id', 'name']
+        elif len(df.columns) == 4:
+            df.columns = ['id', 'name', 'datetime', 'department_id']
+        elif len(df.columns) == 5:
+            df.columns = ['id', 'name', 'datetime', 'department_id', 'job_id']
         return df
     except Exception as e:
         logger.error(f"Error parsing CSV: {e}")

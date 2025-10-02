@@ -6,7 +6,7 @@ from sqlalchemy.pool import StaticPool
 # Database URL from environment variable or default
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/db_migration"
+    "sqlite:///./test.db"
 )
 
 # Create engine
